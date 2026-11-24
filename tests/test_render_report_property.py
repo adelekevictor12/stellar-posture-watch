@@ -26,11 +26,7 @@ SEED = int(os.environ.get("PROPERTY_TEST_SEED", "42"))
 ITERATIONS = int(os.environ.get("PROPERTY_TEST_ITERS", "30"))
 
 # Characters that are meaningful in GitHub-flavoured markdown
-HOSTILE_CHARS = (
-    "\\*_[]<>#|~`&@"
-    "\x00\x01\x07\x08\x0b\x1f\x7f"
-    "‮​‍⁦"
-)
+HOSTILE_CHARS = "\\*_[]<>#|~`&@\x00\x01\x07\x08\x0b\x1f\x7f‮​‍⁦"
 
 
 def hostile_string(rng: random.Random, length: int = 20) -> str:
@@ -58,7 +54,7 @@ def make_report(
             }
         )
     return {
-        "tool_version": f"v{rng.randint(0,9)}.{rng.randint(0,9)}.{rng.randint(0,9)}",
+        "tool_version": f"v{rng.randint(0, 9)}.{rng.randint(0, 9)}.{rng.randint(0, 9)}",
         "network": "testnet",
         "ledger": rng.randint(1_000_000, 9_000_000),
         "exit_code": exit_code,

@@ -15,7 +15,7 @@ G4 are closed below, on the runs and on the reading of the body against the repo
 and 3.4 did not close it: one maintainer wrote both callers. Every claim here names the run or
 the file it was read from.
 
-Last updated: 2026-11-24 04:47 UTC
+Last updated: 2026-11-24 05:10 UTC
 rather than three, because a contributor who picked up two of them learned no format at all. The
 organization's `ISSUE_CONTRACT.md` in `posture-sec/.github` defines PI-1: a marker line naming the
 repository, the roadmap row, the kind and the wave tier, then nine numbered sections in the order a
@@ -769,6 +769,10 @@ it is why this repository's value right now is the plumbing rather than the find
 - [x] **9.56** Strip fenced code blocks before searching for the state marker. Done-when: `_strip_fences()` removes backtick and tilde fences of three or more characters from the text before `decode_state` sees it, an unterminated fence consumes from its opening to the end of the text so a marker embedded in a code example cannot survive as state, `decode_state` is unchanged, and `tests/test_state_in_fence.py` covers a marker inside a backtick fence, a marker inside a tilde fence, a live marker that follows a fenced copy of itself (only the live one is decoded), and a marker after an unterminated fence (no state decoded). **Issue:** #53.
 - [x] **9.57** Clean up newly created output files when an OSError interrupts the write. Done-when: `main()` tracks which output paths `os.replace` committed as new files in `created: list[Path]`, the `except OSError` block unlinks each with `contextlib.suppress(OSError)` after cleaning up the temp files, so a failure writing the summary cannot leave a body behind that a later run would treat as a previous body, and `tests/test_refusal_no_partial.py` asserts that bad JSON, a missing field, a non-string `limits`, an exit-code mismatch and a summary-out that is a pre-existing directory each leave neither body nor summary on disk. **Issue:** #54.
 - [x] **9.58** Assert that every fixture on disk is opened by a test and every fixture named in a test exists on disk. Done-when: `tests/test_fixture_reachability.py` scans all `test_*.py` files for `report-*.json` names, checks that every name on disk appears in at least one test file, every name in a test file exists on disk, every name in `tests/fixtures/README.md` exists on disk, and every name on disk is listed in that README, all four directions reported as set differences so a missing fixture names itself. **Issue:** #55.
+- [x] **9.59** Fail the CI suite when a rendered body carries an em dash (U+2014). Done-when: `tests/test_render_punctuation.py` renders each fixture and the no-change path, asserts no line of the output body contains U+2014, and the test names the fixture, line number and offending line on failure; the reporter's own template strings carry no em dash so all fixture bodies pass. **Issue:** #43.
+- [x] **9.60** Strip bidi overrides and zero-width spaces from chain strings in `escape()`. Done-when: `_BIDI_STRIP` is a compiled regex covering U+202A-U+202E, U+2066-U+2069, U+200B-U+200D, U+2060, and U+FEFF; `escape()` applies `_BIDI_STRIP.sub("", str(value))` before the MARKDOWN_SPECIAL pass; the `&#8203;` emitted by the mention rewrite is unaffected because it is an ASCII HTML entity, not the stripped code point; and `tests/test_escape_bidi.py` tests each range individually plus ASCII, non-Latin and markdown-escape interaction. **Issue:** #44.
+- [x] **9.61** Refuse a ledger or threshold that is not an integer before it is printed. Done-when: `check_snapshot_scalars()` raises `Refused` naming the field when `snapshot.ledger` or any of `snapshot.thresholds.low/medium/high` is not a plain `int` (booleans are rejected because `bool` is a subclass of `int`), `account_rows()` calls it for every account with status `"read"` before building the table row, no body is written on refusal, and `tests/test_account_scalars.py` covers string ledger, string threshold, boolean ledger, boolean threshold, and that all existing fixtures still render successfully. **Issue:** #45.
+- [x] **9.62** Survive a previous body deleted between the exists check and read. Done-when: the `--previous-body` path in `render()` wraps `read_text()` in `try/except OSError` and raises `Refused` with `"cannot read it"` and `exc.strerror` on any `OSError`, so a race where the file is removed between `exists()` and `read_text()`, or a directory passed instead of a file, exits 2 with no body left behind; an absent file is still silently OK; and `tests/test_previous_body_race.py` covers directory-as-path (subprocess), mock-race (unit), and absent path (subprocess). **Issue:** #46.
 ## 6. Gates
 
 - [x] **G1** CI green on `main`: `ci / python` passing on the merged commit, and
@@ -834,7 +838,7 @@ it is why this repository's value right now is the plumbing rather than the find
 | 1 | The action | 11 | 11 | 100% |
 | 2 | Public shape | 12 | 13 | 92% |
 | 3 | Real use | 7 | 8 | 88% |
-| 9 (backlog) | Backlog, not scheduled | 56 | 59 | 95% |
+| 9 (backlog) | Backlog, not scheduled | 60 | 63 | 95% |
 | **All phases** | **Readiness total** | **37** | **39** | **95%** |
 | Gates | G1 to G5 | 4 | 5 | 80% |
 <!-- PROGRESS:END -->

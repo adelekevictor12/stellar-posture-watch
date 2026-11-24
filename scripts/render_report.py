@@ -46,6 +46,12 @@ SARIF_LEVEL = {"high": "error", "warn": "warning"}
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
 MARKDOWN_SPECIAL = re.compile(r"([\\*_\[\]<>#|~`&])")
 MENTION = re.compile(r"(?<![\w/])@(\w{1,39})")
+# Unicode format characters that must not reach the GitHub renderer unchanged.
+# U+202A-U+202E: LRE, RLE, PDF, LRO, RLO (bidirectional formatting)
+# U+2066-U+2069: LRI, RLI, FSI, PDI (bidirectional isolates)
+# U+200B-U+200D: ZWSP, ZWNJ, ZWJ (zero-width joiners / separators)
+# U+2060: WJ (word joiner); U+FEFF: BOM / ZWNBSP
+_BIDI_STRIP = re.compile("[‪-‮⁦-⁩​-‍⁠﻿]")
 NO_CHANGE_SUMMARY = "no change since the previous run"
 
 
@@ -66,10 +72,14 @@ class Refused(Exception):
 def escape(value: object) -> str:
     """Make a report-derived string safe to drop into issue markdown.
 
+    Strips bidi and zero-width Unicode format characters that cause visual spoofing.
     Backslash escapes the characters that can open markup, and any mention is broken
-    with a zero-width space so a hostile home domain cannot notify a user or ``@all``.
+    with a zero-width space entity so a hostile home domain cannot notify a user or
+    ``@all``.  The mention rewrite emits ``&#8203;`` as an HTML entity; because that
+    is ASCII it is unaffected by stripping the corresponding code point U+200B.
     """
-    text = MARKDOWN_SPECIAL.sub(r"\\\1", str(value))
+    text = _BIDI_STRIP.sub("", str(value))
+    text = MARKDOWN_SPECIAL.sub(r"\\\1", text)
     return MENTION.sub(lambda m: "@&#8203;" + m.group(1), text)
 
 
@@ -315,6 +325,7 @@ def account_rows(report: dict) -> str:
                 f"| - | - | {escape(status)} |"
             )
             continue
+        check_snapshot_scalars(snapshot, f"accounts[{account.get('id', '?')}]")
         thresholds = snapshot.get("thresholds") or {}
         flags = snapshot.get("flags") or {}
         set_flags = (
@@ -345,6 +356,25 @@ def account_status(account: dict) -> str:
     if isinstance(skipped, str) and skipped:
         return f"not read: {skipped}"
     return "read"
+
+
+def check_snapshot_scalars(snapshot: dict, where: str) -> None:
+    """Refuse a snapshot whose ledger or thresholds are not plain integers.
+
+    A string ledger or threshold would add extra table cells and shift columns.
+    ``isinstance(x, bool)`` is needed because ``bool`` is a subclass of ``int``.
+    """
+    ledger = snapshot.get("ledger")
+    if not isinstance(ledger, int) or isinstance(ledger, bool):
+        raise Refused(f"{where}: snapshot.ledger must be an integer, got {type(ledger).__name__!r}")
+    thresholds = snapshot.get("thresholds") or {}
+    for name in ("low", "medium", "high"):
+        val = thresholds.get(name, 0)
+        if not isinstance(val, int) or isinstance(val, bool):
+            raise Refused(
+                f"{where}: snapshot.thresholds.{name} must be an integer, "
+                f"got {type(val).__name__!r}"
+            )
 
 
 def status_line(
@@ -402,9 +432,16 @@ def render(args: argparse.Namespace) -> tuple[str, dict[str, object]]:
     current = {f["fingerprint"]: f for f in open_findings}
 
     previous: list[Finding] | None = None
-    if args.previous_body and Path(args.previous_body).exists():
-        raw_body = Path(args.previous_body).read_text(encoding="utf-8", errors="replace")
-        previous = decode_state(_strip_fences(raw_body))
+    if args.previous_body:
+        prev_path = Path(args.previous_body)
+        if prev_path.exists():
+            try:
+                raw_body = prev_path.read_text(encoding="utf-8", errors="replace")
+                previous = decode_state(_strip_fences(raw_body))
+            except OSError as exc:
+                raise Refused(
+                    f"previous body {prev_path}: cannot read it ({exc.strerror})"
+                ) from None
 
     if previous is None:
         new, resolved, changed, baseline = list(current.values()), [], True, True
@@ -512,11 +549,7 @@ def render_sarif(
                 "level": SARIF_LEVEL.get(finding["severity"], "note"),
                 "message": {"text": finding["message"] or finding["rule"]},
                 "locations": [
-                    {
-                        "logicalLocations": [
-                            {"name": finding["account"], "kind": "account"}
-                        ]
-                    }
+                    {"logicalLocations": [{"name": finding["account"], "kind": "account"}]}
                 ],
             }
         )
@@ -668,7 +701,10 @@ def main(argv: list[str] | None = None) -> int:
             sarif = render_sarif(report_data, args.gauge_ref, args.gauge_repo, args.config)
             sarif_path.parent.mkdir(parents=True, exist_ok=True)
             sarif_path.write_text(json.dumps(sarif, indent=2) + "\n", encoding="utf-8")
-            print(f"render_report: wrote SARIF {sarif_path} ({len(sarif['runs'][0]['results'])} results)")  # type: ignore[index]
+            print(
+                f"render_report: wrote SARIF {sarif_path} "
+                f"({len(sarif['runs'][0]['results'])} results)"
+            )  # type: ignore[index]
         except (Refused, OSError) as exc:
             print(f"render_report: cannot write SARIF: {exc}", file=sys.stderr)
             return 2

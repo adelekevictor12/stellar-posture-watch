@@ -77,6 +77,7 @@ class TestCommentSubcommand(CommentHarness):
         self.assertEqual(method, "POST")
         self.assertIn("/repos/owner/repo/issues/42/comments", url)
         import json
+
         data = json.loads(payload)
         self.assertEqual(data["body"], "hello from posture watch")
 

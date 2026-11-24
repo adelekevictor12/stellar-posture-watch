@@ -34,7 +34,7 @@ def _base_report() -> dict:
         "limits": LIMITS,
         "accounts": [
             {
-                "snapshot": {"id": ACCOUNT_A},
+                "snapshot": {"id": ACCOUNT_A, "ledger": 100},
                 "findings": [
                     {
                         "rule_id": "flag-drift",
@@ -46,7 +46,7 @@ def _base_report() -> dict:
                 ],
             },
             {
-                "snapshot": {"id": ACCOUNT_B},
+                "snapshot": {"id": ACCOUNT_B, "ledger": 100},
                 "findings": [],
             },
         ],

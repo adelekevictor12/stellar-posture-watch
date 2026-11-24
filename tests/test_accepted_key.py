@@ -53,7 +53,7 @@ def _report(*, rule_in_findings: str, rule_in_accepted: str) -> dict:
         "limits": LIMITS,
         "accounts": [
             {
-                "snapshot": {"id": ACCOUNT_A},
+                "snapshot": {"id": ACCOUNT_A, "ledger": 100},
                 "findings": [
                     {
                         "rule_id": rule_in_accepted,
@@ -80,7 +80,7 @@ def _two_account_report(*, accepted_rule: str, open_rule: str) -> dict:
         "limits": LIMITS,
         "accounts": [
             {
-                "snapshot": {"id": ACCOUNT_A},
+                "snapshot": {"id": ACCOUNT_A, "ledger": 100},
                 "findings": [
                     {
                         "rule_id": accepted_rule,
@@ -92,7 +92,7 @@ def _two_account_report(*, accepted_rule: str, open_rule: str) -> dict:
                 ],
             },
             {
-                "snapshot": {"id": ACCOUNT_B},
+                "snapshot": {"id": ACCOUNT_B, "ledger": 100},
                 "findings": [
                     {
                         "rule_id": open_rule,
@@ -178,7 +178,7 @@ class TestAcceptedKeyFingerprint(Harness):
             "limits": LIMITS,
             "accounts": [
                 {
-                    "snapshot": {"id": ACCOUNT_A},
+                    "snapshot": {"id": ACCOUNT_A, "ledger": 100},
                     "findings": [
                         {
                             "rule_id": "flag-drift",
