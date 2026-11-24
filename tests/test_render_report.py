@@ -652,7 +652,7 @@ class TestSARIFRender(Renderer):
         import render_report as rr  # type: ignore[import-not-found]
 
         sarif = rr.render_sarif(report, PIN, "posture-sec/guage", str(report_path))
-        levels = {r["level"] for r in sarif["runs"][0]["results"]}
+        levels = {r["level"] for r in sarif["runs"][0]["results"]}  # type: ignore[index]
         self.assertIn("warning", levels)
 
     def test_sarif_tool_name_is_stellar_gauge(self) -> None:
