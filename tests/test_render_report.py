@@ -87,7 +87,7 @@ class Renderer(unittest.TestCase):
 
 class TestFirstRun(Renderer):
     def test_a_clean_report_establishes_a_baseline_with_no_findings(self) -> None:
-        code, _body, _summary, err = self.render("report-clean.json")
+        code, body, summary, err = self.render("report-clean.json")
         self.assertEqual(code, 0, err)
         self.assertIn("This run establishes the baseline", body)
         self.assertIn("No findings open", body)
@@ -163,7 +163,7 @@ class TestFirstRun(Renderer):
                 }
             )
         )
-        code, _body, _summary, err = self.render(empty)
+        code, body, summary, err = self.render(empty)
         self.assertEqual(code, 0, err)
         self.assertIn("The report lists no accounts.", body)
         self.assertEqual(summary["open"], 0)
@@ -311,7 +311,7 @@ class TestChangeDetection(Renderer):
     def test_an_identical_run_again_is_marked_unchanged(self) -> None:
         previous = self.tmp / "previous.md"
         previous.write_text(self.fixture_body("report-findings.json"))
-        code, _body, _summary, err = self.render("report-findings.json", previous)
+        code, body, summary, err = self.render("report-findings.json", previous)
         self.assertEqual(code, 0, err)
         self.assertFalse(summary["changed"])
         self.assertEqual((summary["new"], summary["resolved"]), (0, 0))
@@ -321,7 +321,7 @@ class TestChangeDetection(Renderer):
     def test_a_resolved_finding_moves_out_of_current_and_into_resolved(self) -> None:
         previous = self.tmp / "previous.md"
         previous.write_text(self.fixture_body("report-findings.json"))
-        code, _body, _summary, err = self.render("report-clean.json", previous)
+        code, body, summary, err = self.render("report-clean.json", previous)
         self.assertEqual(code, 0, err)
         self.assertTrue(summary["changed"])
         self.assertEqual((summary["new"], summary["resolved"]), (0, 1))
@@ -347,7 +347,7 @@ class TestChangeDetection(Renderer):
     def test_a_body_without_a_marker_starts_a_new_baseline_rather_than_crashing(self) -> None:
         previous = self.tmp / "previous.md"
         previous.write_text("An issue opened by a human, with no marker at all.")
-        code, _body, _summary, err = self.render("report-findings.json", previous)
+        code, body, summary, err = self.render("report-findings.json", previous)
         self.assertEqual(code, 0, err)
         self.assertTrue(summary["changed"])
         self.assertIn("establishes the baseline", body)
@@ -356,7 +356,7 @@ class TestChangeDetection(Renderer):
         for payload in ("!!!not base64!!!", "", MARKER_RE.sub("", "x")):
             previous = self.tmp / "previous.md"
             previous.write_text(f"<!-- posture-watch:state v1 {payload} -->")
-            code, _body, _summary, err = self.render("report-findings.json", previous)
+            code, body, summary, err = self.render("report-findings.json", previous)
             self.assertEqual(code, 0, err)
             self.assertIn("establishes the baseline", body)
             self.assertTrue(summary["changed"])
@@ -405,7 +405,7 @@ class TestChangeDetection(Renderer):
 
 class TestAcceptedFindings(Renderer):
     def test_an_accepted_finding_is_counted_separately_and_stays_out_of_the_marker(self) -> None:
-        code, _body, _summary, err = self.render("report-accepted.json")
+        code, body, summary, err = self.render("report-accepted.json")
         self.assertEqual(code, 0, err)
         self.assertEqual((summary["open"], summary["accepted"]), (0, 1))
         self.assertIn("## Accepted in the policy", body)
