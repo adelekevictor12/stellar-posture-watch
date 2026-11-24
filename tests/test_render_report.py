@@ -17,6 +17,7 @@ from tempfile import TemporaryDirectory
 from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "scripts"))
 SCRIPT = ROOT / "scripts" / "render_report.py"
 FIXTURES = ROOT / "tests" / "fixtures"
 PIN = "da656733fff839d5cf20f795460f4365a7254257"
@@ -604,7 +605,7 @@ class TestFixtureProvenance(unittest.TestCase):
 
 class TestSARIFRender(Renderer):
     def render_sarif(self, fixture: str) -> dict[str, Any]:
-        import scripts.render_report as rr
+        import render_report as rr  # type: ignore[import-not-found]
 
         report_path = FIXTURES / fixture
         report = json.loads(report_path.read_text())
@@ -648,7 +649,7 @@ class TestSARIFRender(Renderer):
             for finding in account.get("findings") or []:
                 finding["severity"] = "warn"
                 break
-        import scripts.render_report as rr
+        import render_report as rr  # type: ignore[import-not-found]
 
         sarif = rr.render_sarif(report, PIN, "posture-sec/guage", str(report_path))
         levels = {r["level"] for r in sarif["runs"][0]["results"]}
