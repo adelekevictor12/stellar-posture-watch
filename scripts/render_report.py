@@ -702,9 +702,7 @@ def main(argv: list[str] | None = None) -> int:
             sarif_path.parent.mkdir(parents=True, exist_ok=True)
             sarif_path.write_text(json.dumps(sarif, indent=2) + "\n", encoding="utf-8")
             result_count = len(sarif["runs"][0]["results"])  # type: ignore[index]
-            print(
-                f"render_report: wrote SARIF {sarif_path} ({result_count} results)"
-            )
+            print(f"render_report: wrote SARIF {sarif_path} ({result_count} results)")
         except (Refused, OSError) as exc:
             print(f"render_report: cannot write SARIF: {exc}", file=sys.stderr)
             return 2
